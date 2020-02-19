@@ -23,10 +23,10 @@ public final class Constants {
     
      // on right side so we reverse it if we put the encode on correct. disble if we
     // need to once we test
-    public static final int d_RightTop = 2;
-    public static final int d_RightBottom = 3;
-    public static final int d_LeftTop = 0;
-    public static final int d_LeftBottom = 1;
+    public static int d_RightTop = 12;
+    public static int d_RightBottom = 11;
+    public static int d_LeftTop = 14;
+    public static int d_LeftBottom = 10;
 
     //Controller Ports
     public static int ps4_port = 0;
@@ -46,12 +46,9 @@ public final class Constants {
 
     public static final double kTrackwidthMeters = 0.27289392026922016;
 
-    public static final DifferentialDriveKinematics kDriveKinematics =
-        new DifferentialDriveKinematics(kTrackwidthMeters);
-
     public static final double kWheelDiameterMeters = Units.inchesToMeters(4);
 
-    public static final double kDriveTicks2Feet = 1.0 / 4096 * 4 * Math.PI / 12;
+    public static final double kDriveTicks2Feet = 1.0 / 4096 * 4 * Math.PI / 12; //encoder cpr is 2048 for fx
     public static final double kDeg2Talon4096Unit = 1 / 360.0 * 4096.0;
     public static final double kTalon4096Unit2Deg = 1 / kDeg2Talon4096Unit;
 
@@ -74,7 +71,7 @@ public final class Constants {
 
     public static final double kDDriveVel = 0;
 
-	public static final double ENCODER_CPR = 4096.0;
+	public static final double ENCODER_CPR = 2048.0;
 
 
 

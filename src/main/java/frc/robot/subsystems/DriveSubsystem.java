@@ -33,6 +33,8 @@ public class DriveSubsystem extends SubsystemBase {
   }
 
   public void tankDriveVolts(double leftVolts, double rightVolts) {
+    System.out.println("OUTPUT LEFT VOL: " + leftVolts);
+    System.out.println("OUTPUT RIGHT VOL: " + rightVolts);
     Robot.driveTrain.tankDriveVolts(leftVolts, rightVolts);
   }
 
@@ -54,6 +56,16 @@ public class DriveSubsystem extends SubsystemBase {
  
   public DriveSubsystem() {
 
+  }
+
+  public void justAFK()
+  {
+    System.out.println("afakfakfakfafk");
+  }
+
+  public void resetOdometry(Pose2d pose)
+  {
+    Robot.driveTrain.resetOdometry(pose);
   }
 
   @Override

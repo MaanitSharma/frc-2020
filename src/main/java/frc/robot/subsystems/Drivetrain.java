@@ -45,13 +45,13 @@ import frc.robot.Robot;
 
 public class Drivetrain extends Subsystem {
   // The motors on the left side of the drive.
-  private static WPI_TalonFX leftMaster;
-  private static WPI_TalonFX leftSlave;
-  private static WPI_TalonFX rightMaster;
-  private static WPI_TalonFX rightSlave;
+  private static WPI_TalonFX leftMaster = new WPI_TalonFX(Constants.d_LeftTop);
+  private static WPI_TalonFX leftSlave = new WPI_TalonFX(Constants.d_LeftBottom);
+  private static WPI_TalonFX rightMaster = new WPI_TalonFX(Constants.d_RightTop);
+  private static WPI_TalonFX rightSlave = new WPI_TalonFX(Constants.d_RightBottom);
 
   // The robot's drive
-  private DifferentialDrive m_drive;
+  private DifferentialDrive m_drive = new DifferentialDrive(leftMaster, rightMaster);
 
  
 
@@ -59,33 +59,28 @@ public class Drivetrain extends Subsystem {
   private final Gyro gyro = new ADXRS450_Gyro(SPI.Port.kOnboardCS0);
 
   // Odometry class for tracking robot pose
-  public final DifferentialDriveKinematics kinematics = new DifferentialDriveKinematics(Units.inchesToMeters(24));
-  public final DifferentialDriveOdometry odometry = new DifferentialDriveOdometry(Rotation2d.fromDegrees(-gyro.getAngle()));;
-  public final SimpleMotorFeedforward feedforward = new SimpleMotorFeedforward(0.54, 0.153, 0.0234);
+  //public final DifferentialDriveKinematics kinematics = new DifferentialDriveKinematics(Units.inchesToMeters(24));
+  public final DifferentialDriveKinematics kinematics = new DifferentialDriveKinematics(Constants.kTrackwidthMeters);
+  public final DifferentialDriveOdometry odometry = new DifferentialDriveOdometry(Rotation2d.fromDegrees(getHeading()));;
+  public final SimpleMotorFeedforward feedforward = new SimpleMotorFeedforward(Constants.ksVolts, Constants.kvVoltSecondsPerMeter, Constants.kaVoltSecondsSquaredPerMeter);
 
-  public final PIDController leftPIDController = new PIDController(1.09, 0, 0);
-  public final PIDController righPIDController = new PIDController(1.09, 0, 0);
+  public final PIDController leftPIDController = new PIDController(Constants.kPDriveVel, 0, Constants.kDDriveVel);
+  public final PIDController righPIDController = new PIDController(Constants.kPDriveVel, 0, Constants.kDDriveVel);
   
-  Pose2d pose;
-
-  public Rotation2d getHeading() {
-    return Rotation2d.fromDegrees(-gyro.getAngle());
-  }
-
   public Pose2d getPose(){
-    return pose; 
+    return odometry.getPoseMeters(); 
   }
 
   public DifferentialDriveWheelSpeeds getWheelSpeeds() {
-    return new DifferentialDriveWheelSpeeds(
-      getLeftEncoderVelocity() / 10.75 * 2 * Math.PI * Units.inchesToMeters(4.0) / 60,
-      getRightEncoderVelocity() / 10.75 * 2 * Math.PI * Units.inchesToMeters(4.0) / 60
+    return new DifferentialDriveWheelSpeeds( //&10 or 10.75
+      getLeftEncoderVelocity()  * 10 * (1.0/Constants.ENCODER_CPR) * (Math.PI * Constants.kWheelDiameterMeters),
+      getRightEncoderVelocity()  * 10 * (1.0/Constants.ENCODER_CPR) * (Math.PI * Constants.kWheelDiameterMeters)
     );
   }
 
   public void tankDriveVolts(double leftVolts, double rightVolts) {
-    leftMaster.setVoltage(leftVolts);
-    rightMaster.setVoltage(-rightVolts);
+    leftMaster.set(leftVolts);
+    rightMaster.set(rightVolts); //why negative :P //should be voltage... but too small
     m_drive.feed();
   }
 
@@ -93,7 +88,7 @@ public class Drivetrain extends Subsystem {
     return feedforward;
   }
 
-  public DifferentialDriveKinematics getKinematics(){
+  public DifferentialDriveKinematics getKinematics() {
     return kinematics;
   }
 
@@ -122,12 +117,11 @@ public class Drivetrain extends Subsystem {
     configMagEncoder(rightMaster, false);
   }
 
+  public double getHeading() {
+    return Math.IEEEremainder(-gyro.getAngle(), 180);
+  }
+
   private void initTalons(){
-    rightMaster = new WPI_TalonFX(Constants.d_RightTop);
-    rightSlave = new WPI_TalonFX(Constants.d_RightBottom);
-    leftMaster = new WPI_TalonFX(Constants.d_LeftTop);
-    leftSlave = new WPI_TalonFX(Constants.d_LeftBottom);
-    m_drive = new DifferentialDrive(leftMaster, rightMaster);
 
     //Init Talons
     leftMaster.setInverted(false);
@@ -152,12 +146,12 @@ public class Drivetrain extends Subsystem {
   }
 
   public void updatePose(){
-    pose = odometry.update(getHeading(), getLeftEncoderPosition(), getRightEncoderPosition());
+    odometry.update(Rotation2d.fromDegrees(getHeading()), getLeftEncoderPosition(), getRightEncoderPosition());
   }
 
   public void resetOdometry(Pose2d pose) {
     resetEncoders();
-    odometry.resetPosition(pose, Rotation2d.fromDegrees(-gyro.getAngle())); //potential bug #1
+    odometry.resetPosition(pose, Rotation2d.fromDegrees(getHeading())); 
   }
   
   public void resetEncoders() {
@@ -174,11 +168,13 @@ public class Drivetrain extends Subsystem {
   }
 
   public double getLeftEncoderPosition() {
-    return leftMaster.getSelectedSensorPosition(0) * Constants.kDriveTicks2Feet;
+    //return leftMaster.getSelectedSensorPosition(0) * Constants.kDriveTicks2Feet;
+    return leftMaster.getSelectedSensorPosition(0) * (1 / Constants.ENCODER_CPR) * (Math.PI*Constants.kWheelDiameterMeters);
   }
 
   public double getRightEncoderPosition() {
-    return rightMaster.getSelectedSensorPosition(0) * Constants.kDriveTicks2Feet;
+    //return rightMaster.getSelectedSensorPosition(0) * Constants.kDriveTicks2Feet;
+    return rightMaster.getSelectedSensorPosition(0) * (1 / Constants.ENCODER_CPR) * (Math.PI*Constants.kWheelDiameterMeters);
   }
 
   public double getRightEncoderVelocity() {
@@ -263,10 +259,13 @@ public class Drivetrain extends Subsystem {
   public void driveSlave(double left, double right) {
     leftMaster.set(ControlMode.PercentOutput, -left);
     rightMaster.set(ControlMode.PercentOutput, -right);
+    leftSlave.set(ControlMode.PercentOutput, -left);
+    rightSlave.set(ControlMode.PercentOutput, -right);
   }
 
   public void driveJoystick(){
     driveSlave(Robot.oi.getPs4LeftYaxis(), Robot.oi.getPs4RightYaxis());
+    //driveSlave(0.2, 0.2);
   }
 
   /*public void runFalcons(){
@@ -276,9 +275,21 @@ public class Drivetrain extends Subsystem {
   public void testRunFalcons(){
     testFalcon.set(ControlMode.PercentOutput, 1);
   }*/
-  @Override
-  public void periodic() {
-    setDefaultCommand(new DriveCommand());
+
+  public void motorOff()
+  {
+    rightMaster.setNeutralMode(NeutralMode.Coast);
+    leftMaster.setNeutralMode(NeutralMode.Coast);
+    rightSlave.setNeutralMode(NeutralMode.Coast);
+    leftSlave.setNeutralMode(NeutralMode.Coast);
+  }
+
+  public void motorOn()
+  {
+    rightMaster.setNeutralMode(NeutralMode.Brake);
+    leftMaster.setNeutralMode(NeutralMode.Brake);
+    rightSlave.setNeutralMode(NeutralMode.Brake);
+    leftSlave.setNeutralMode(NeutralMode.Brake);
   }
 
   @Override

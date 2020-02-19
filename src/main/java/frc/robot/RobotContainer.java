@@ -50,23 +50,25 @@ public class RobotContainer {
    * The container for the robot.  Contains subsystems, OI devices, and commands.
    */
   public RobotContainer() {
-    robotDrive.setDefaultCommand(getAutonomousCommand());
+    /*robotDrive.setDefaultCommand( //getAutonomousCommand());
         // A split-stick arcade command, with forward/backward controlled by the left
         // hand, and turning controlled by the right.
-        /*new RunCommand(() -> robotDrive
-            .tankDrive(-m_driverController.getY(GenericHID.Hand.kLeft),
-                         m_driverController.getX(GenericHID.Hand.kRight)), robotDrive));*/
+        new RunCommand(() -> 
+          robotDrive.justAFK()));*/
   }
 
+  public Command hahahDoNothing() {
+    System.out.println("hasdfjasd;flasd");
+    Robot.driveTrain.driveSlave(0.1, 0.1);
+    return null;
+  }
 
   public Command getAutonomousCommand() {
 
     var autoVoltageConstraint =
         new DifferentialDriveVoltageConstraint(
-            new SimpleMotorFeedforward(Constants.ksVolts,
-                                       Constants.kvVoltSecondsPerMeter,
-                                       Constants.kaVoltSecondsSquaredPerMeter),
-            Constants.kDriveKinematics,
+            robotDrive.getFeedForward(),
+            robotDrive.getKinematics(),
             10);
 
     // Create config for trajectory
@@ -74,7 +76,7 @@ public class RobotContainer {
         new TrajectoryConfig(Constants.kMaxSpeedMetersPerSecond,
                              Constants.kMaxAccelerationMetersPerSecondSquared)
             // Add kinematics to ensure max speed is actually obeyed
-            .setKinematics(Constants.kDriveKinematics)
+            .setKinematics(robotDrive.getKinematics())
             // Apply the voltage constraint
             .addConstraint(autoVoltageConstraint);
 
@@ -84,8 +86,8 @@ public class RobotContainer {
         new Pose2d(0, 0, new Rotation2d(0)),
         // Pass through these two interior waypoints, making an 's' curve path
        List.of(
-            new Translation2d(1.0, 0.0),
-            new Translation2d(2.0, 0.0)
+            new Translation2d(1.0, 1.0),
+            new Translation2d(2.0, -1.0)
         ),
         
         // End 3 meters straight ahead of where we started, facing forward
@@ -98,10 +100,8 @@ public class RobotContainer {
         Trajectory,
         robotDrive::getPose,
         new RamseteController(Constants.kRamseteB, Constants.kRamseteZeta),
-        new SimpleMotorFeedforward(Constants.ksVolts,
-                                   Constants.kvVoltSecondsPerMeter,
-                                   Constants.kaVoltSecondsSquaredPerMeter),
-        Constants.kDriveKinematics,
+        robotDrive.getFeedForward(),
+        robotDrive.getKinematics(),
         robotDrive::getWheelSpeeds,
         robotDrive.getLeftPIDController(),
         robotDrive.getRightPIDController(),
@@ -110,10 +110,12 @@ public class RobotContainer {
         robotDrive
     );
 
+    System.out.println("ghjkklghkljk;" + ramseteCommand);
+
     // Run path following command, then stop at the end.
-    return ramseteCommand.andThen(() -> {
-      robotDrive.tankDriveVolts(0, 0);
-      System.out.println("hello! you didnt fail this");
-    });
+      return ramseteCommand.andThen(() -> {
+        robotDrive.tankDriveVolts(0, 0);
+        System.out.println("hello! you didnt fail this");
+      });
   }
 }
